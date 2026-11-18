@@ -153,17 +153,35 @@ final class ArticleRepository
         );
     }
 
-private const WORDS_PER_MINUTE = 200;
+    private const WORDS_PER_MINUTE = 200;
 
-/**
- * Estimated reading time in whole minutes, rounding any partial minute
- * up to a full minute (minimum 1).
- */
-private function readingTime(string $markdown): int
-{
-    $words = str_word_count(strip_tags($markdown));
+    /**
+     * Estimated reading time in whole minutes, rounding any partial minute
+     * up to a full minute (minimum 1).
+     */
+    private function readingTime(string $markdown): int
+    {
+        $words = str_word_count(strip_tags($markdown));
 
-    // Round up so a partial minute still counts as a full minute.
-    return max(1, intdiv($words + self::WORDS_PER_MINUTE - 1, self::WORDS_PER_MINUTE));
-}
+        // Round up so a partial minute still counts as a full minute.
+        return max(1, intdiv($words + self::WORDS_PER_MINUTE - 1, self::WORDS_PER_MINUTE));
+    }
+
+    private function frontMatterParser(): FrontMatterParser
+    {
+        return $this->frontMatter ??= new FrontMatterParser(new SymfonyYamlFrontMatterParser());
+    }
+
+    private function converter(): MarkdownConverter
+    {
+        if (null === $this->converter) {
+            $environment = new Environment();
+            $environment->addExtension(new CommonMarkCoreExtension());
+            $environment->addExtension(new GithubFlavoredMarkdownExtension());
+
+            $this->converter = new MarkdownConverter($environment);
+        }
+
+        return $this->converter;
+    }
 }
